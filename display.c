@@ -10,10 +10,43 @@ for red, green and blue respectively
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "ml6.h"
 #include "display.h"
 
+/*======== from_hex ========
+Inputs: char hex_code
+Returns: color c 
+Converts hex_code to rgb color 
+Must be in form "#aabbcc"
+===========*/
+color from_hex(char * hex_code)
+{
+    char red[3], green[3], blue[3]; 
+    strncpy(red,   hex_code+1, 2); 
+    strncpy(green, hex_code+3, 2); 
+    strncpy(blue,  hex_code+5, 2); 
+    
+    color c; 
+    c.red = (int) strtol(red, NULL, 16); 
+    c.green = (int) strtol(green, NULL, 16); 
+    c.blue = (int) strtol(blue, NULL, 16); 
+
+    return c; 
+}
+
+static int stroke_weight = 1; 
+
+/*======== set_stroke_weight ========
+Inputs: int weight
+Returns: 
+Globally sets stroke weight to weight
+===============*/
+void set_stroke_weight(int weight)
+{
+    stroke_weight = weight; 
+}
 
 /*======== void plot() ==========
 Inputs:   screen s
@@ -29,9 +62,31 @@ of s that get set. For example, using s[x][YRES-1-y] will have
 pixel 0, 0 located at the lower left corner of the screen
 ====================*/
 void plot( screen s, color c, int x, int y) {
-  int newy = YRES - 1 - y;
-  if ( x >= 0 && x < XRES && newy >=0 && newy < YRES )
-    s[x][newy] = c;
+    int sx = x - (int) (stroke_weight / 2); 
+    int sy = y - (int) (stroke_weight / 2); 
+    for(int i = 0; i < stroke_weight; ++i)
+        for(int j = 0; j < stroke_weight; ++j)
+        {
+            int x = sx + i; 
+            int y = sy + j; 
+            int newy = YRES - 1 - y;
+            if ( x >= 0 && x < XRES && newy >=0 && newy < YRES )
+                s[x][newy] = c;
+        }
+}
+
+/*======== void reset_color() ==========
+Inputs:   screen s  
+            color c
+Returns: 
+Sets every color in screen s to color c
+====================*/
+void reset_color(screen s, color c)
+{
+  int x, y;
+  for ( y=0; y < YRES; y++ )
+    for ( x=0; x < XRES; x++)      
+      s[x][y] = c;
 }
 
 /*======== void clear_screen() ==========
@@ -41,16 +96,13 @@ Sets every color in screen s to black
 ====================*/
 void clear_screen( screen s ) {
 
-  int x, y;
-  color c;
+  color c = {
+      c.red = DEFAULT_COLOR,
+      c.green = DEFAULT_COLOR,
+      c.blue = DEFAULT_COLOR
+  };
 
-  c.red = DEFAULT_COLOR;
-  c.green = DEFAULT_COLOR;
-  c.blue = DEFAULT_COLOR;
-
-  for ( y=0; y < YRES; y++ )
-    for ( x=0; x < XRES; x++)      
-      s[x][y] = c;
+  reset_color(s, c); 
 }
 
 /*======== void save_ppm() ==========
